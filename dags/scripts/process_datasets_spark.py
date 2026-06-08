@@ -13,19 +13,19 @@ def run_spark_analytics():
     print("Membaca seluruh aliran data dari Data Lake...")
     # Spark dengan mudah membaca SEMUA file parquet di folder ini sekaligus
     orders = spark.read.parquet(
-        "file:///opt/airflow/data_lake/raw/orders.parquet"
+        "file:///opt/airflow/data_lake/orders.parquet"
     )
     order_items = spark.read.parquet(
-        "file:///opt/airflow/data_lake/raw/order_items.parquet"
+        "file:///opt/airflow/data_lake/order_items.parquet"
     )
     reviews = spark.read.parquet(
-        "file:///opt/airflow/data_lake/raw/order_reviews.parquet"
+        "file:///opt/airflow/data_lake/order_reviews.parquet"
     )
     customers = spark.read.parquet(
-        "file:///opt/airflow/data_lake/raw/customers.parquet"
+        "file:///opt/airflow/data_lake/customers.parquet"
     )
     sellers = spark.read.parquet(
-        "file:///opt/airflow/data_lake/raw/sellers.parquet"
+        "file:///opt/airflow/data_lake/sellers.parquet"
     )
 
     print("Melakukan join dataset...")
