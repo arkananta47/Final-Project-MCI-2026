@@ -4,7 +4,7 @@ from airflow.operators.empty import EmptyOperator
 from datetime import datetime, timedelta
 
 default_args = {
-    "owner": "kelompok28",
+    "owner": "aqil",
     "start_date": datetime(2026, 1, 1),
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
@@ -13,9 +13,9 @@ default_args = {
 SCRIPTS_DIR = "/opt/airflow/dags/scripts"
 
 with DAG(
-    dag_id="mci2026_orders_pipeline",
+    dag_id="mci2026_dustiniadelixiagroceria_pipeline",
     default_args=default_args,
-    description="Orders ETL Pipeline",
+    description="Dataset Pipeline",
     schedule_interval="@daily",
     catchup=False,
     max_active_runs=1

@@ -1,6 +1,5 @@
--- MCI2026 Task 2 — Metabase Queries 
--- Dataset: Grocery Orders
--- Database: mci2026_db
+-- MCI2026 Final Project — DustiniaDelixia Groceria 
+-- Database: fpmci2026_db
 
 -- Q1: Daily Order Activity
 SELECT

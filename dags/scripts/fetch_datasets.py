@@ -3,15 +3,20 @@ import pandas as pd
 import os
 from datetime import datetime
 
-def fetch_orders():
-    print("Membuka keran data: API Orders...")
-    url = "http://96.9.212.102:8000/orders"
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-    data = response.json()
-    orders = data["orders"]
-    parsed_data = []
+def fetch_dataset():
+    print("Membuka keran data: Ingesting dataset...")
+    base_dir = "./DustiniaDelixia_Groceria"
+    output_dir = "/opt/airflow/data_lake"
 
+    csv_files = [
+        "customers.csv",
+        "geolocation.csv",
+        "order_items.csv",
+        "order_reviews.csv",
+        "orders.csv",
+        "sellers.csv",
+    ]
+    
     for order in orders:
         order_id = str(order.get("order_id"))
         user_id = str(order.get("user_id"))
@@ -73,8 +78,6 @@ def fetch_orders():
             })
 
     df = pd.DataFrame(parsed_data)
-
-    output_dir = "/opt/airflow/data_lake/orders"
 
     os.makedirs(output_dir, exist_ok=True)
     output_path = (
