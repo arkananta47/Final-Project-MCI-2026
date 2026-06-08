@@ -25,17 +25,17 @@ with DAG(
         task_id="start"
     )
 
-    fetch_orders = BashOperator(
-        task_id="fetch_orders",
+    fetch_dataset = BashOperator(
+        task_id="fetch_datasets",
         bash_command=(
-            f"python {SCRIPTS_DIR}/fetch_orders.py"
+            f"python {SCRIPTS_DIR}/fetch_datasets.py"
         )
     )
 
-    process_orders = BashOperator(
-        task_id="process_orders_spark",
+    process_datasets = BashOperator(
+        task_id="process_datasets_spark",
         bash_command=(
-            f"python {SCRIPTS_DIR}/process_orders_spark.py"
+            f"python {SCRIPTS_DIR}/process_datasets_spark.py"
         )
     )
 
@@ -43,4 +43,4 @@ with DAG(
         task_id="end"
     )
 
-    start >> fetch_orders >> process_orders >> end
+    start >> fetch_dataset >> process_datasets >> end
