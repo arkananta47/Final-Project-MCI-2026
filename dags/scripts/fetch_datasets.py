@@ -5,7 +5,7 @@ from datetime import datetime
 
 def fetch_dataset():
     print("Membuka keran data: Ingesting dataset...")
-    base_dir = "./DustiniaDelixia_Groceria"
+    base_dir = "/opt/airflow/dataset"
     output_dir = "/opt/airflow/data_lake"
 
     os.makedirs(output_dir, exist_ok=True)
@@ -22,8 +22,9 @@ def fetch_dataset():
     for file in csv_files:
         source_path = os.path.join(base_dir, file)
         if not os.path.exists(source_path):
-            print(f"{file} tidak ditemukan")
-            continue
+            raise FileNotFoundError(
+                f"Dataset tidak ditemukan: {source_path}"
+            )
 
         df = pd.read_csv(source_path)
 

@@ -10,6 +10,7 @@ x-airflow-common:
   volumes:
     - ./dags:/opt/airflow/dags
     - ./data_lake:/opt/airflow/data_lake
+    - ./DustiniaDelixia_Groceria:/opt/airflow/dataset
   depends_on:
     postgres:
       condition: service_healthy
