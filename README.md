@@ -320,7 +320,7 @@ seller_id
 
 Visualisasi:
 
-![alt text](assets/q1.png)
+<img width="1172" height="240" alt="image" src="https://github.com/user-attachments/assets/50ded965-b8f7-4765-a661-5fe926175914" />
 
 ## Insight
 Visualisasi ini menampilkan ringkasan performa operasional pengiriman secara keseluruhan.
@@ -338,7 +338,7 @@ Insight yang dapat diperoleh:
 
 Visualisasi:
 
-![alt text](assets/q2.png)
+<img width="581" height="390" alt="image" src="https://github.com/user-attachments/assets/aac919af-f261-49c6-89ec-8df560411b57" />
 
 ## Insight
 Visualisasi ini membandingkan jumlah pesanan yang dikirim tepat waktu dengan pesanan yang terlambat.
@@ -356,7 +356,7 @@ Insight:
 
 Visualisasi:
 
-![alt text](assets/q3.png)
+<img width="1171" height="353" alt="image" src="https://github.com/user-attachments/assets/8f560d16-e539-4ef6-b2ad-6be3e5a4efb6" />
 
 ## Insight
 Visualisasi ini menampilkan wilayah pelanggan dengan rata-rata keterlambatan pengiriman tertinggi.
@@ -374,7 +374,7 @@ Insight:
 
 Visualisasi:
 
-![alt text](assets/q4.png)
+<img width="1172" height="396" alt="image" src="https://github.com/user-attachments/assets/197c1603-26b5-4733-83e8-8179d61d9441" />
 
 ## Insight
 Visualisasi ini menunjukkan wilayah dengan rata-rata review score terendah.
@@ -392,7 +392,7 @@ Insight:
 
 Visualisasi:
 
-![alt text](assets/q5.png)
+<img width="1171" height="502" alt="image" src="https://github.com/user-attachments/assets/cb91b865-335a-4d01-96bf-1e395c66fcab" />
 
 ## Insight
 Visualisasi ini menampilkan seller dengan tingkat pelanggaran SLA pengiriman tertinggi.
@@ -410,7 +410,7 @@ Insight:
 
 Visualisasi:
 
-![alt text](assets/q6.png)
+<img width="1173" height="508" alt="image" src="https://github.com/user-attachments/assets/b7b336c3-f3e1-41ee-aed9-ffec1cade6f0" />
 
 ## Insight
 Visualisasi ini menunjukkan seller dengan review score tertinggi dan performa pengiriman yang baik.
@@ -428,7 +428,7 @@ Insight:
 
 Visualisasi:
 
-![alt text](assets/q7.png)
+<img width="1176" height="453" alt="image" src="https://github.com/user-attachments/assets/6d577c82-d587-4b61-b5b5-76d8dfaa06fe" />
 
 ## Insight
 Visualisasi ini memperlihatkan tren performa pengiriman dari bulan ke bulan.
@@ -446,7 +446,7 @@ Insight:
 
 Visualisasi:
 
-![alt text](assets/q8.png)
+<img width="580" height="396" alt="image" src="https://github.com/user-attachments/assets/a2b99184-b6fe-4333-b101-694a5a74b761" />
 
 ## Insight
 Visualisasi ini menampilkan distribusi sentimen pelanggan berdasarkan komentar review.
@@ -464,7 +464,7 @@ Insight:
 
 Visualisasi:
 
-![alt text](assets/q9.png)
+<img width="1168" height="345" alt="image" src="https://github.com/user-attachments/assets/6f8da971-86a7-48c3-9887-e2bcedfeda8a" />
 
 ## Insight
 Visualisasi ini menganalisis hubungan antara sentimen pelanggan dan tingkat keterlambatan pengiriman.
@@ -482,7 +482,7 @@ Insight:
 
 Visualisasi:
 
-![alt text](assets/q10.png)
+<img width="1170" height="301" alt="image" src="https://github.com/user-attachments/assets/c8bcdcf8-0a35-45d2-9686-04aed0972953" />
 
 ## Insight
 Visualisasi ini menunjukkan distribusi rating yang diberikan pelanggan setelah pesanan diterima.
