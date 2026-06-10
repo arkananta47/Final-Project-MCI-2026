@@ -1,153 +1,114 @@
 -- MCI2026 Final Project — DustiniaDelixia Groceria 
 -- Database: fpmci2026_db
 
--- Q1: Daily Order Activity
+-- Q1: Executive KPI Overview
 SELECT
-    order_date,
     total_orders,
-    total_items
-FROM mci2026_db.orders_daily_orders
-ORDER BY order_date ASC;
+    ROUND(avg_delay_days,2) AS avg_delay_days,
+    ROUND(late_rate * 100,2) AS late_rate_percent,
+    ROUND(avg_review_score,2) AS avg_review_score
+FROM fpmci2026_db.kpi_summary;
 
 
--- Q2: Top 30 Most Ordered Products
-SELECT
-    product_name,
-    department,
-    total_orders,
-    total_items,
-    total_reordered
-FROM mci2026_db.orders_trending_products
-ORDER BY total_items DESC
-LIMIT 30;
-
-
--- Q3: Most Popular Departments
-SELECT
-    department,
-    total_orders,
-    total_items_sold,
-    round(reorder_rate * 100, 2)
-        AS reorder_rate_percent
-FROM mci2026_db.orders_category_summary
-ORDER BY total_items_sold DESC;
-
-
--- Q4: Reorder Distribution
+-- Q2: On-Time vs Late Delivery Rate
 SELECT
     CASE
-        WHEN reordered = 1
-            THEN 'Reordered'
-        ELSE 'First Purchase'
-    END AS reorder_status,
-    count() AS total_items,
-    round(
-        count() * 100.0 /
-        sum(count()) OVER (),
-        2
-    ) AS percentage
-FROM mci2026_db.orders
-GROUP BY reorder_status
-ORDER BY total_items DESC;
+        WHEN is_late = 1 THEN 'Late'
+        ELSE 'On-Time'
+    END AS delivery_status,
+    COUNT(*) AS total_orders
+FROM fpmci2026_db.fact_operational_orders
+GROUP BY delivery_status
 
 
--- Q5: Top 10 Most Active Users
+-- Q3: Top 10 State dengan Keterlambatan Terbesar
 SELECT
-    user_id,
-    countDistinct(order_id)
-        AS total_orders,
-    count()
-        AS total_items,
-    avg(add_to_cart_order)
-        AS avg_cart_position
-FROM mci2026_db.orders
-GROUP BY user_id
-ORDER BY total_items DESC
+    customer_state,
+    total_orders,
+    ROUND(avg_delay_days,2) AS avg_delay_days,
+    ROUND(late_rate * 100,2) AS late_rate_percent
+FROM fpmci2026_db.state_summary
+ORDER BY avg_delay_days DESC
 LIMIT 10;
 
 
--- Q6: Most Popular Aisles
+-- Q4: State dengan Kepuasan Terendah
 SELECT
-    aisle,
-    count()
-        AS total_items,
-    countDistinct(order_id)
-        AS total_orders
-FROM mci2026_db.orders
-WHERE aisle != ''
-GROUP BY aisle
-ORDER BY total_items DESC
+    customer_state,
+    ROUND(avg_review_score,2) AS avg_review_score,
+    total_orders
+FROM fpmci2026_db.state_summary
+ORDER BY avg_review_score ASC
+LIMIT 10;
+
+
+-- Q5: Top Seller dengan SLA Breach Tertinggi
+SELECT
+    seller_id,
+    total_orders,
+    ROUND(sla_breach_rate * 100,2) AS sla_breach_percent,
+    ROUND(avg_delay_days,2) AS avg_delay_days
+FROM fpmci2026_db.seller_summary
+WHERE total_orders > 50
+ORDER BY sla_breach_rate DESC
 LIMIT 15;
 
 
--- Q7: Basket Size Distribution
+-- Q6: Top 10 Seller Terbaik
 SELECT
-    CASE
-        WHEN item_count <= 5
-            THEN '1-5 Items'
-        WHEN item_count <= 10
-            THEN '6-10 Items'
-        WHEN item_count <= 20
-            THEN '11-20 Items'
-        ELSE '20+ Items'
-    END AS basket_size,
-    count() AS total_orders
-FROM (
-    SELECT
-        order_id,
-        count() AS item_count
-    FROM mci2026_db.orders
-    GROUP BY order_id
-)
-GROUP BY basket_size
-ORDER BY total_orders DESC;
+    seller_id,
+    total_orders,
+    ROUND(avg_review_score,2) AS avg_review_score,
+    ROUND(sla_breach_rate * 100,2) AS sla_breach_percent
+FROM fpmci2026_db.seller_summary
+WHERE total_orders > 50
+ORDER BY avg_review_score DESC
+LIMIT 15;
 
 
--- Q8: Top Reordered Products
+-- Q7: Monthly Delivery Trend
 SELECT
-    product_name,
-    department,
-    sum(reordered)
-        AS total_reordered,
-    count()
-        AS total_orders,
-    round(
-        sum(reordered) * 100.0 / count(),
+    order_month,
+    total_orders,
+    ROUND(avg_delay_days,2) AS avg_delay_days,
+    ROUND(late_rate * 100,2) AS late_rate_percent
+FROM fpmci2026_db.monthly_trend
+ORDER BY order_month;
+
+
+-- Q8: Sentiment Distribution
+SELECT
+    sentiment_label,
+    COUNT(*) AS total_reviews,
+    ROUND(
+        COUNT(*) * 100.0 /
+        SUM(COUNT(*)) OVER (),
         2
-    ) AS reorder_rate_pct
-FROM mci2026_db.orders
-GROUP BY product_name, department
-HAVING total_orders >= 5
-ORDER BY reorder_rate_pct DESC
-LIMIT 20;
+    ) AS percentage
+FROM fpmci2026_db.fact_review_sentiment
+GROUP BY sentiment_label;
 
 
--- Q9: KPI Summary Dashboard
+-- Q9: Sentiment vs Delay
 SELECT
-    countDistinct(order_id)
-        AS total_orders,
-    countDistinct(user_id)
-        AS unique_users,
-    countDistinct(product_id)
-        AS unique_products,
-    countDistinct(department)
-        AS unique_departments,
-    count()
-        AS total_items_sold,
-    round(
-        avg(reordered) * 100,
+    sentiment_label,
+
+    ROUND(
+        AVG(delivery_delay_days),
         2
-    ) AS overall_reorder_rate_pct
-FROM mci2026_db.orders;
+    ) AS avg_delay_days,
+
+    COUNT(*) AS total_reviews
+
+FROM fpmci2026_db.fact_review_sentiment
+GROUP BY sentiment_label
+ORDER BY avg_delay_days DESC;
 
 
--- Q10: Shopping Time Analysis
+-- Q10: Review Score Distribution
 SELECT
-    order_hour_of_day,
-    countDistinct(order_id)
-        AS total_orders,
-    count()
-        AS total_items
-FROM mci2026_db.orders
-GROUP BY order_hour_of_day
-ORDER BY order_hour_of_day ASC;
+    review_score,
+    COUNT(*) AS total_reviews
+FROM fpmci2026_db.fact_operational_orders
+GROUP BY review_score
+ORDER BY review_score;

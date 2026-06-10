@@ -1,13 +1,13 @@
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from clickhouse_driver import Client
-import glob
-import os
+import pandas as pd
+import re
 
 def run_spark_analytics():
     spark = SparkSession.builder \
         .appName("DustiniaDelixia_Operational_Analytics") \
-        .config("spark.driver.memory", "2g") \
+        .config("spark.driver.memory", "1g") \
         .getOrCreate()
 
     print("Membaca seluruh aliran data dari Data Lake...")
@@ -99,11 +99,11 @@ def run_spark_analytics():
         "shipping_time_days",
         (
             F.unix_timestamp(
-                "order_delivered_customer_date"
+                "order_delivered_carrier_date"
             )
             -
             F.unix_timestamp(
-                "order_delivered_carrier_date"
+                "order_approved_at"
             )
         ) / 86400
     )
@@ -262,6 +262,130 @@ def run_spark_analytics():
     df_seller = seller_summary.toPandas()
     df_month = monthly_trend.toPandas()
 
+    # DATA CLEANING UNTUK CLICKHOUSE
+    string_cols_fact = [
+        "order_id",
+        "customer_id",
+        "seller_id",
+        "customer_state",
+        "seller_state",
+        "order_month"
+    ]
+
+    for col in string_cols_fact:
+        if col in df_fact.columns:
+            df_fact[col] = (
+                df_fact[col]
+                .fillna("")
+                .astype(str)
+            )
+
+    numeric_cols_fact = [
+        "review_score",
+        "delivery_delay_days",
+        "processing_time_days",
+        "shipping_time_days",
+        "is_late"
+    ]
+
+    for col in numeric_cols_fact:
+        if col in df_fact.columns:
+            df_fact[col] = pd.to_numeric(
+                df_fact[col],
+                errors="coerce"
+            ).fillna(0)
+
+    if "customer_state" in df_state.columns:
+        df_state["customer_state"] = (
+            df_state["customer_state"]
+            .fillna("")
+            .astype(str)
+        )
+
+    if "seller_id" in df_seller.columns:
+        df_seller["seller_id"] = (
+            df_seller["seller_id"]
+            .fillna("")
+            .astype(str)
+        )
+
+    if "order_month" in df_month.columns:
+        df_month["order_month"] = (
+            df_month["order_month"]
+            .fillna("")
+            .astype(str)
+        )
+
+    df_kpi = df_kpi.fillna(0)
+
+    # Bagian Stemming Bahasa Portugis (ide untuk sentiment analysis)
+    positive_keywords = [
+        "rapido",
+        "antes",
+        "prazo",
+        "adiantado",
+        "parabens",
+        "excelente",
+        "bem-embalado",
+        "certinho",
+        "recomendo"
+    ]
+
+    negative_keywords = [
+        "atraso",
+        "atrasado",
+        "demora",
+        "demorou",
+        "amassado",
+        "quebrado",
+        "danificado",
+        "eternidade",
+        "rastreamento",
+        "correios",
+        "horrivel",
+        "pessimo",
+        "extraviado",
+        "sumiu",
+        "reclamacao"
+    ]
+
+    def analyze_sentiment(text):
+        if text is None:
+            return "neutral", ""
+        text = str(text).lower()
+
+        for pos in positive_keywords:
+            if pos in text:
+                return "positive", pos
+        for neg in negative_keywords:
+            if neg in text:
+                return "negative", neg
+
+        return "neutral", ""
+    
+    review_sentiment = (
+        df
+        .select(
+            "order_id",
+            "review_score",
+            "review_comment_message",
+            "delivery_delay_days",
+            "customer_state",
+            "seller_id"
+        )
+        .toPandas()
+    )
+
+    review_sentiment[
+        ["sentiment_label", "keyword"]
+    ] = review_sentiment[
+        "review_comment_message"
+    ].apply(
+        lambda x: pd.Series(
+            analyze_sentiment(x)
+        )
+    )
+
     # CLICKHOUSE
     print("Memuat ke ClickHouse Warehouse...")
 
@@ -302,6 +426,7 @@ def run_spark_analytics():
         ORDER BY order_id
     """)
 
+    # FACT TABLE
     fact_data = df_fact[
         [
             "order_id",
@@ -316,17 +441,63 @@ def run_spark_analytics():
             "is_late",
             "order_month"
         ]
-    ].fillna(0)
+    ].copy()
 
+    # STRING COLUMNS
+    string_cols = [
+        "order_id",
+        "customer_id",
+        "seller_id",
+        "customer_state",
+        "seller_state",
+        "order_month"
+    ]
+
+    for col in string_cols:
+        fact_data[col] = (
+            fact_data[col]
+            .astype("string")
+            .fillna("")
+            .astype(str)
+        )
+
+    # NUMERIC COLUMNS
+    fact_data["review_score"] = pd.to_numeric(
+        fact_data["review_score"],
+        errors="coerce"
+    ).fillna(0.0)
+
+    fact_data["delivery_delay_days"] = pd.to_numeric(
+        fact_data["delivery_delay_days"],
+        errors="coerce"
+    ).fillna(0.0)
+
+    fact_data["processing_time_days"] = pd.to_numeric(
+        fact_data["processing_time_days"],
+        errors="coerce"
+    ).fillna(0.0)
+
+    fact_data["shipping_time_days"] = pd.to_numeric(
+        fact_data["shipping_time_days"],
+        errors="coerce"
+    ).fillna(0.0)
+
+    fact_data["is_late"] = pd.to_numeric(
+        fact_data["is_late"],
+        errors="coerce"
+    ).fillna(0).astype(int)
+
+    
     client.execute(
         """INSERT INTO fpmci2026_db.fact_operational_orders VALUES""",
-        [
-            tuple(x)
-            for x in fact_data.to_numpy()
-        ]
+        fact_data.values.tolist()
     )
 
     print("fact_operational_orders loaded")
+    print(df_kpi.dtypes)
+    print(df_state.dtypes)
+    print(df_seller.dtypes)
+    print(df_month.dtypes)
 
     # TABLE: KPI summary
     client.execute(
@@ -346,12 +517,30 @@ def run_spark_analytics():
         ORDER BY total_orders
     """)
 
+    df_kpi["total_orders"] = (
+        pd.to_numeric(
+            df_kpi["total_orders"],
+            errors="coerce"
+        )
+        .fillna(0)
+        .astype(int)
+    )
+
+    data_kpi = [
+        (
+            int(row["total_orders"]),
+            float(row["avg_delay_days"]),
+            float(row["avg_processing_days"]),
+            float(row["avg_shipping_days"]),
+            float(row["avg_review_score"]),
+            float(row["late_rate"])
+        )
+        for _, row in df_kpi.iterrows()
+    ]
+
     client.execute(
-        """INSERT INTO fpmci2026_db.kpi_summary VALUES""",
-        [
-            tuple(x)
-            for x in df_kpi.to_numpy()
-        ]
+        "INSERT INTO fpmci2026_db.kpi_summary VALUES",
+        data_kpi
     )
 
     print("✅ kpi_summary loaded")
@@ -360,6 +549,7 @@ def run_spark_analytics():
     client.execute(
         "DROP TABLE IF EXISTS fpmci2026_db.state_summary"
     )
+
 
     client.execute("""
         CREATE TABLE fpmci2026_db.state_summary (
@@ -373,12 +563,29 @@ def run_spark_analytics():
         ORDER BY customer_state
     """)
 
+    df_state["total_orders"] = (
+        pd.to_numeric(
+            df_state["total_orders"],
+            errors="coerce"
+        )
+        .fillna(0)
+        .astype(int)
+    )
+
+    data_state = [
+        (
+            str(row["customer_state"]),
+            int(row["total_orders"]),
+            float(row["avg_delay_days"]),
+            float(row["late_rate"]),
+            float(row["avg_review_score"])
+        )
+        for _, row in df_state.iterrows()
+    ]
+
     client.execute(
-        """INSERT INTO fpmci2026_db.state_summary VALUES""",
-        [
-            tuple(x)
-            for x in df_state.to_numpy()
-        ]
+        "INSERT INTO fpmci2026_db.state_summary VALUES",
+        data_state
     )
 
     print("✅ state_summary loaded")
@@ -387,6 +594,7 @@ def run_spark_analytics():
     client.execute(
         "DROP TABLE IF EXISTS fpmci2026_db.seller_summary"
     )
+
 
     client.execute("""
         CREATE TABLE fpmci2026_db.seller_summary (
@@ -400,12 +608,36 @@ def run_spark_analytics():
         ORDER BY seller_id
     """)
 
+    df_seller["seller_id"] = (
+        df_seller["seller_id"]
+        .astype("string")
+        .fillna("")
+        .astype(str)
+    )
+
+    df_seller["total_orders"] = (
+        pd.to_numeric(
+            df_seller["total_orders"],
+            errors="coerce"
+        )
+        .fillna(0)
+        .astype(int)
+    )
+
+    data_seller = [
+        (
+            str(row["seller_id"]),
+            int(row["total_orders"]),
+            float(row["sla_breach_rate"]),
+            float(row["avg_delay_days"]),
+            float(row["avg_review_score"])
+        )
+        for _, row in df_seller.iterrows()
+    ]
+
     client.execute(
-        """INSERT INTO fpmci2026_db.seller_summary VALUES""",
-        [
-            tuple(x)
-            for x in df_seller.to_numpy()
-        ]
+        "INSERT INTO fpmci2026_db.seller_summary VALUES",
+        data_seller
     )
 
     print("✅ seller_summary loaded")
@@ -426,15 +658,89 @@ def run_spark_analytics():
         ORDER BY order_month
     """)
 
+    df_month["order_month"] = (
+        df_month["order_month"]
+        .astype("string")
+        .fillna("")
+        .astype(str)
+    )
+
+    df_month["total_orders"] = (
+        pd.to_numeric(
+            df_month["total_orders"],
+            errors="coerce"
+        )
+        .fillna(0)
+        .astype(int)
+    )
+
+    data_month = [
+        (
+            str(row["order_month"]),
+            int(row["total_orders"]),
+            float(row["avg_delay_days"]),
+            float(row["late_rate"])
+        )
+        for _, row in df_month.iterrows()
+    ]
+
     client.execute(
-        """INSERT INTO fpmci2026_db.monthly_trend VALUES""",
-        [
-            tuple(x)
-            for x in df_month.to_numpy()
-        ]
+        "INSERT INTO fpmci2026_db.monthly_trend VALUES",
+        data_month
     )
 
     print("✅ monthly_trend loaded")
+
+    # TABLE: sentiement review
+    client.execute("""
+        DROP TABLE IF EXISTS fpmci2026_db.fact_review_sentiment"""
+    )
+
+    client.execute("""
+        CREATE TABLE fpmci2026_db.fact_review_sentiment (
+            order_id String,
+            review_score Int32,
+            sentiment_label String,
+            keyword String,
+            delivery_delay_days Float64,
+            customer_state String,
+            seller_id String
+        )
+        ENGINE = MergeTree()
+        ORDER BY order_id
+    """)
+
+    review_sentiment["review_comment_message"] = (
+        review_sentiment["review_comment_message"]
+        .fillna("")
+        .astype(str)
+    )
+
+    sentiment_data = [
+        (
+            str(row["order_id"]),
+            int(
+                0 if pd.isna(row["review_score"])
+                else row["review_score"]
+            ),
+            str(row["sentiment_label"]),
+            str(row["keyword"]),
+            float(
+                0 if pd.isna(row["delivery_delay_days"])
+                else row["delivery_delay_days"]
+            ),
+            str(row["customer_state"]),
+            str(row["seller_id"])
+        )
+        for _, row in review_sentiment.iterrows()
+    ]
+
+    client.execute(
+        """INSERT INTO fpmci2026_db.fact_review_sentiment VALUES""",
+        sentiment_data
+    )
+
+    print("✅ review_sentiment loaded")
 
     spark.stop()
 

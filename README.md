@@ -1,24 +1,17 @@
-# 🚀 OPREC MCI 2026 Task 2 — Orders Data Pipeline  
+# 🚀 OPREC MCI 2026 Final Project — DustiniaDelixia_Groceria - Operational Analysis  
 
-> Tugas Modul 2 & 3 Lab MCI 2026 · End-to-End Modern Data Stack Implementation
+> Tugas Final Project Lab MCI 2026 · End-to-End Modern Data Stack Implementation
 
 ---
 
-# 👥 Anggota Kelompok 28
+# 👥 Data Diri Author
 
 | Nama | NRP |
 |---|---|
 | Muh. Aqil Alqadri Syahid | 5025241161 |
-| Kadek Andra Wikanjaya Putra | 5025241187 |
 
 ---
 
-# Link Metabase Dashboard:
-```text
-http://localhost:3000/public/dashboard/b2de6533-b7a1-4213-9989-150585c81dc2
-```
-
----
 
 # 🧰 Technology Stack
 
@@ -30,218 +23,212 @@ Apache Airflow → PySpark → ClickHouse → Metabase / Power BI
 
 ---
 
-| Component      | Technology          | Function                                |
-| -------------- | ------------------- | --------------------------------------- |
-| Orchestration  | Apache Airflow      | Menjalankan dan monitoring ETL pipeline |
-| Processing     | PySpark             | Transformasi dan analytics data         |
-| Storage        | Parquet Data Lake   | Temporary staging layer                 |
-| Data Warehouse | ClickHouse          | Penyimpanan analytical tables           |
-| Visualization  | Metabase / Power BI | Dashboard dan visualisasi data          |
-
----
-
 # 📋 Daftar Isi
-1. **Overview**  
-2. **Arsitektur Pipeline**  
-3. **Penjelasan Script**  
-4. **Clickhouse Schema**  
-5. **Metabase Visualization**
+1. **🎯 Overview**  
+2. **📦 Dataset Brief**  
+3. **🎯 Business Problem** 
+4. **😊 Sentiment Analysis**
+5. **🏗 Arsitektur Pipeline**
+6. **📦 Penjelasan Script**
+7. **🗄 ClickHouse Schema**
+8. **📊 Metabase Visualization**
 
 ---
 
 # 🎯 Overview
 
-Project ini membangun **end-to-end ETL data pipeline** menggunakan modern data stack untuk memproses dataset grocery orders berbasis API.
+Project ini membangun **end-to-end data pipeline untuk menganalisis performa operasional pengiriman pada DustiniaDelixia_Groceria (dataset berasal dari Olist E-Commerce)** menggunakan Apache Airflow, PySpark, ClickHouse, dan Metabase.
+
+Tujuan utama proyek adalah mengevaluasi efektivitas proses fulfillment dan pengiriman pesanan berdasarkan data transaksi, data pengiriman, serta review pelanggan.
 
 Pipeline melakukan:
 
-* **Extract data dari REST API**
-* **Transform nested JSON menjadi tabular dataset**
-* **Simpan data ke Data Lake format Parquet**
-* **Transformasi analytics menggunakan PySpark**
-* **Load hasil analytics ke ClickHouse**
-* **Visualisasi menggunakan Metabase dan Power BI**
-
-Dataset berasal dari REST API:
-
-```text
-http://96.9.212.102:8000/orders
-```
-
-Dataset berbentuk **Instacart-style grocery orders** yang berisi:
-
-- **Order transaksi**
-- **Customer orders**
-- **Products information**
-- **Products categories**
-- **reordered items**
-- **Shopping behaviour**
+* **Membaca dataset Parquet dari Data Lake**
+* **Menggabungkan data order, customer, seller, item, dan review**
+* **Menghitung KPI operasional pengiriman**
+* **Melakukan sentiment analysis sederhana terhadap review pelanggan**
+* **Memuat hasil analisis ke ClickHouse**
+* **Menyajikan insight melalui dashboard Metabase**
 
 ---
 
-# 📦 Dataset Structure
+# 📦 Dataset Brief
+Dataset yang digunakan adalah Olist Brazilian E-Commerce Dataset. Terdapat 11 dataset yang bisa digunakan, namun karena saya memilih persona 3 alias **Operational Analyst**, maka saya telah menyeleksi dataset-dataset yang menurut saya relevan untuk digunakan dalam proses analisis nantinya.
 
-Contoh struktur data API:
+| Dataset       | Keterangan                        |
+| ------------- | --------------------------------- |
+| orders        | Informasi pesanan                 |
+| order_items   | Informasi item dan shipping limit |
+| order_reviews | Review pelanggan                  |
+| customers     | Informasi customer                |
+| sellers       | Informasi seller                  |
 
-```json
-{
-  "order_id": 718195,
-  "user_id": 37056,
-  "order_number": 46,
-  "order_dow": 1,
-  "order_hour_of_day": 15,
-  "days_since_prior_order": 3,
-  "products": [
-    {
-      "product_id": 31720,
-      "product_name": "Organic Whole Milk",
-      "aisle": "milk",
-      "department": "dairy eggs",
-      "reordered": 1
-    }
-  ]
-}
+---
+
+# 🎯 Business Problem
+
+Analisis dilakukan untuk menjawab beberapa pertanyaan bisnis:
+
+* **Berapa persen pesanan terlambat?**
+* **State mana yang memiliki keterlambatan tertinggi?**
+* **Seller mana yang paling sering melanggar SLA?**
+* **Apakah keterlambatan memengaruhi kepuasan pelanggan?**
+* **Apakah performa pengiriman membaik dari waktu ke waktu?**
+
+*Keywords:* ```"Bagaimana performa pengiriman Olist, siapa yang menyebabkan masalah, wilayah mana yang bermasalah, apakah keterlambatan memengaruhi kepuasan pelanggan, dan apa keluhan utama pelanggan."```
+
+---
+
+# 😊 Sentiment Analysis
+Selain menganalisis performa operasional pengiriman, pipeline ini juga melakukan ***analisis sentimen terhadap ulasan pelanggan*** untuk memahami bagaimana pengalaman pengiriman memengaruhi tingkat kepuasan konsumen.
+
+_Proses analisis_ dilakukan dengan mengekstrak komentar pelanggan pada dataset review, kemudian mengidentifikasi kata-kata yang sering diasosiasikan dengan pengalaman pengiriman yang **positif, negatif, maupun netral**.
+
+#### 🎯 Tujuan Analisis
+Analisis ini bertujuan untuk:
+* Mengukur persepsi pelanggan terhadap layanan pengiriman.
+* Mengidentifikasi faktor utama yang menyebabkan kepuasan atau ketidakpuasan pelanggan.
+* Menemukan hubungan antara keterlambatan pengiriman dengan sentimen review.
+* Membantu perusahaan memahami area operasional yang perlu ditingkatkan.
+
+#### 🔍 Metode yang Digunakan
+Pipeline menerapkan pendekatan **Keyword-Based Sentiment Classification** pada review berbahasa Portugis.
+
+Setiap komentar pelanggan akan dianalisis untuk mencari kata kunci yang berkaitan dengan pengalaman pengiriman.
+
+***Positive Delivery Experience***
+Contoh kata kunci yang menunjukkan pengalaman positif:
 ```
+rápido
+antes
+prazo
+adiantado
+parabéns
+excelente
+bem-embalado
+certinho
+recomendo
+```
+*Makna bisnis:*
+- Pengiriman lebih cepat dari estimasi.
+- Barang diterima tepat waktu.
+- Kondisi barang baik saat diterima.
+- Pelanggan bersedia merekomendasikan layanan.
+
+
+***Negative Delivery Experience***
+Contoh kata kunci yang menunjukkan pengalaman negatif:
+```
+atraso
+atrasado
+demora
+demorou
+amassado
+quebrado
+danificado
+eternidade
+rastreamento
+correios
+horrível
+péssimo
+extraviado
+sumiu
+reclamação
+```
+*Makna bisnis:*
+- Pengiriman terlambat.
+- Barang rusak selama proses distribusi.
+- Masalah pelacakan pengiriman.
+- Paket hilang atau tidak diterima pelanggan.
+- Keluhan terhadap kualitas layanan logistik.
 
 ---
 
 # 🏗 Arsitektur Pipeline
-
 ```text
                 ┌────────────────────┐
-                │   REST API Orders  │
-                │  /orders endpoint  │
+                │   Olist Dataset    │
+                │     Parquet        │
                 └─────────┬──────────┘
                           │
                           ▼
-              fetch_orders.py (Airflow)
+               process_datasets_spark.py
+
                           │
+
+      ┌───────────────────┼───────────────────┐
+      │                   │                   │
+
+      ▼                   ▼                   ▼
+fact_operational    KPI & Summary    Sentiment Analysis
+    Orders              Tables
+
+      │                   │                   │
+
+      └───────────────────┬───────────────────┘
                           ▼
-          ┌────────────────────────────────┐
-          │      Data Lake (Parquet)       │
-          │ data_lake/orders/*.parquet     │
-          └────────────────────────────────┘
+
+                 ClickHouse Warehouse
+
                           │
-                          ▼
-          process_orders_spark.py (PySpark)
-                          │
-        ┌─────────────────┼─────────────────┐
-        │                 │                 │
-        ▼                 ▼                 ▼
- orders_trending   orders_category   orders_daily_orders
-    _products         _summary
-                          │
-                          ▼
-                  ┌────────────────┐
-                  │   ClickHouse   │
-                  │   mci2026_db   │
-                  └────────────────┘
-                          │
-            ┌─────────────┴─────────────┐
-            ▼                           ▼
-       Metabase                    Power BI
-```
 
----
-
-# 🌐 Akses Service
-
-| Service | URL | Login |
-|---|---|---|
-| Airflow | http://localhost:8080 | admin / admin |
-| Metabase | http://localhost:3000 | setup awal |
-| ClickHouse HTTP | http://localhost:8123 | kelompok28 / kelompok28 |
-
----
-
-# ▶️ Menjalankan Pipeline
-
-## 1. Buka Airflow
-
-```text
-http://localhost:8080
-```
-
-## 2. Aktifkan DAG
-
-Aktifkan DAG:
-
-```text
-mci2026_orders_pipeline
-```
-
-## 3. Trigger DAG
-
-Klik:
-
-```text
-Trigger DAG
-```
-
-Pipeline akan menjalankan:
-
-```text
-   start
-     ↓
-fetch_orders
-     ↓
-process_orders_spark
-     ↓
-    end
+                 Metabase Dashboard
 ```
 
 ---
 
 # 📦 Penjelasan Script
 
-# 1. fetch_orders.py
+# 1. fetch_datasets.py
+Script untuk proses **Extract** dan penyimpanan ke Data Lake.
 
-Script ini:
-
-- mengambil data dari REST API
-- melakukan parsing nested JSON
-- flatten products array
-- normalisasi struktur data
-- menyimpan hasil ke Parquet
+Fungsi:
+- Mengambil dataset Olist dari sumber data
+- Membaca seluruh file CSV yang diperlukan
+- Mengonversi dataset ke format Parquet
+- Menyimpan hasil ke folder ```data_lake```
 
 ## Output
 
 ```text
-data_lake/orders/orders_YYYYMMDD_HHMMSS.parquet
+customers.parquet
+orders.parquet
+order_items.parquet
+order_reviews.parquet
+sellers.parquet
 ```
 
-
-# 2. process_orders_spark.py
+# 2. process_datasets_spark.py
+Script utama untuk proses **Transform dan Load** menggunakan PySpark.
 
 Script ini:
+- Membaca dataset Parquet dari Data Lake
+- Melakukan join antar tabel Olist
+- Menghitung KPI operasional pengiriman
+- Melakukan sentiment analysis sederhana menggunakan keyword matching pada review pelanggan
 
-- membaca seluruh file parquet
-- melakukan transformasi analytics menggunakan PySpark
-- aggregasi data
-- load hasil ke ClickHouse
+#### Beberapa database yang dibuat
+```
+fact_operational_orders
+kpi_summary
+state_summary
+seller_summary
+monthly_trend
+fact_review_sentiment
+```
 
-## Analytics yang dibuat
+# 3. datasets_pipeline.py
+Script Apache Airflow DAG yang mengatur seluruh workflow ETL.
 
-| Table                    | Description            |
-| ------------------------ | ---------------------- |
-| orders                   | Raw transactional data |
-| orders_trending_products | Produk terlaris        |
-| orders_category_summary  | Analytics kategori     |
-| orders_daily_orders      | Analytics harian       |
-
-
-# 3. orders_pipeline.py
-
-Airflow DAG orchestration:
-
+Workflow:
 ```text
-   start
-     ↓
-fetch_orders
-     ↓
-process_orders_spark
-     ↓
-    end
+     start
+       ↓
+  fetch_datasets
+       ↓
+process_datasets_spark
+       ↓
+      end
 ```
 
 ---
@@ -251,245 +238,271 @@ process_orders_spark
 Database:
 
 ```sql
-mci2026_db
+fpmci2026_db
 ```
 
 ## Tables
 
-### 1. orders
+### 1. fact_operational_orders
+Fact table utama.
+```
+order_id
+customer_id
+seller_id
+customer_state
+seller_state
+review_score
+delivery_delay_days
+processing_time_days
+shipping_time_days
+is_late
+order_month
+```
 
-Raw transactional data.
+### 2. kpi_summary
+Ringkasan KPI global.
+```
+total_orders
+avg_delay_days
+avg_processing_days
+avg_shipping_days
+avg_review_score
+late_rate
+```
 
-### 2. orders_trending_products
+### 3. state_summary
+Ringkasan performa per state.
+```
+customer_state
+total_orders
+avg_delay_days
+late_rate
+avg_review_score
+```
 
-Analytics produk terlaris.
+### 4. seller_summary
+Ringkasan performa seller.
+```
+seller_id
+total_orders
+sla_breach_rate
+avg_delay_days
+avg_review_score
+```
 
-### 3. orders_category_summary
+### 5. monthly_trend
+Trend bulanan.
+```
+order_month
+total_orders
+avg_delay_days
+late_rate
+```
 
-Analytics kategori produk.
-
-### 4. orders_daily_orders
-
-Analytics harian.
+### 6. fact_review_sentiment
+Hasil sentiment analysis.
+```
+order_id
+review_score
+sentiment_label
+keyword
+delivery_delay_days
+customer_state
+seller_id
+```
 
 ---
 
 # 📊 Metabase Visualization
+### 📈 Dashboard Queries & Insights
 
-# Setup Metabase
-
-## Add Clickhouse Database
-
-**Database Information**:
-
-| Field | Value |
-|---|---|
-| Host | clickhouse-server |
-| Port | 8123 |
-| Database | mci2026_db |
-| Username | kelompok28 |
-| Password | kelompok28 |
-
-
-# 📈 Dashboard Queries & Insights
-
-## Q1 — Daily Order Activity
+#### Q1 — Executive KPI Overview
 
 Visualisasi:
 
 ![alt text](assets/q1.png)
 
 ## Insight
-
-Visualisasi ini menunjukkan tren aktivitas order harian.
+Visualisasi ini menampilkan ringkasan performa operasional pengiriman secara keseluruhan.
 
 Insight yang dapat diperoleh:
-
-* mengetahui hari dengan volume order tertinggi
-* melihat pola kenaikan atau penurunan transaksi
-* mendeteksi peak shopping activity
-* mengukur pertumbuhan transaksi dari waktu ke waktu
+* Mengetahui total jumlah pesanan yang berhasil diproses dalam periode pengamatan.
+* Mengukur rata-rata keterlambatan pengiriman dibanding estimasi yang diberikan kepada pelanggan.
+* Mengetahui persentase pesanan yang terlambat (late delivery rate).
+* Mengukur tingkat kepuasan pelanggan melalui rata-rata review score.
+* Menjadi indikator utama untuk mengevaluasi efektivitas sistem logistik secara keseluruhan.
 
 ---
 
-## Q2: Top 30 Most Ordered Products
+## Q2: On-Time vs Late Delivery Rate
 
 Visualisasi:
 
 ![alt text](assets/q2.png)
 
 ## Insight
-
-Menampilkan produk yang paling sering dibeli customer.
+Visualisasi ini membandingkan jumlah pesanan yang dikirim tepat waktu dengan pesanan yang terlambat.
 
 Insight:
-
-* Mengetahui produk terlaris pada platform.
-* Mengidentifikasi produk dengan demand tertinggi.
-* Membantu strategi inventory dan restock produk.
-* Menentukan produk utama untuk promosi atau bundling.
+* Mengetahui proporsi keberhasilan pengiriman tepat waktu.
+* Mengukur tingkat kepatuhan terhadap target pengiriman.
+* Mengidentifikasi seberapa besar masalah keterlambatan dalam sistem logistik.
+* Menjadi indikator utama kualitas layanan pengiriman kepada pelanggan.
+* Dapat digunakan untuk mengevaluasi efektivitas proses fulfillment dan distribusi.
 
 ---
 
-## Q3 — Most Popular Departments
+## Q3 — Top 10 States dengan Keterlambatan Terbesar
 
 Visualisasi:
 
 ![alt text](assets/q3.png)
 
 ## Insight
-
-Menampilkan performa setiap kategori produk.
+Visualisasi ini menampilkan wilayah pelanggan dengan rata-rata keterlambatan pengiriman tertinggi.
 
 Insight:
-
-* Mengetahui kategori produk dengan volume penjualan terbesar.
-* Mengukur tingkat loyalitas pelanggan melalui reorder rate.
-* Department dengan reorder rate tinggi menunjukkan customer retention yang baik.
-* Membantu menentukan fokus bisnis dan prioritas stok.
+* Mengidentifikasi state yang memiliki performa pengiriman paling buruk.
+* Mengetahui daerah yang berpotensi mengalami kendala distribusi atau infrastruktur logistik.
+* Membantu perusahaan menentukan prioritas perbaikan operasional berdasarkan wilayah.
+* Dapat digunakan untuk evaluasi lokasi warehouse atau distribusi regional.
+* Memberikan gambaran persebaran masalah keterlambatan secara geografis.
 
 ---
 
-## Q4 — Reorder Distribution
+## Q4 — State dengan Kepuasan Pelanggan Terendah
 
 Visualisasi:
 
 ![alt text](assets/q4.png)
 
 ## Insight
-
-Membandingkan jumlah pembelian ulang (reordered) dengan pembelian pertama.
+Visualisasi ini menunjukkan wilayah dengan rata-rata review score terendah.
 
 Insight:
-
-* Mengukur customer loyalty terhadap produk.
-* Persentase reorder tinggi menunjukkan produk sering dikonsumsi ulang.
-* Dapat digunakan untuk analisis customer retention.
-* Membantu identifikasi produk konsumsi rutin.
+* Mengidentifikasi daerah yang memiliki tingkat kepuasan pelanggan paling rendah.
+* Membantu mencari hubungan antara keterlambatan pengiriman dan kepuasan pelanggan.
+* Menentukan wilayah yang membutuhkan peningkatan kualitas layanan.
+* Menjadi indikator kualitas pengalaman pelanggan berdasarkan lokasi geografis.
+* Dapat digunakan untuk evaluasi performa operasional per wilayah.
 
 ---
 
-## Q5 — Top 10 Most Active Users
+## Q5 — Top Seller dengan SLA Breach Tertinggi
 
 Visualisasi:
 
 ![alt text](assets/q5.png)
 
 ## Insight
-
-Menampilkan user dengan aktivitas transaksi tertinggi.
+Visualisasi ini menampilkan seller dengan tingkat pelanggaran SLA pengiriman tertinggi.
 
 Insight:
-
-* Mengidentifikasi pelanggan paling aktif.
-* Mengetahui perilaku heavy users.
-* Dapat digunakan untuk loyalty program atau segmentation.
-* Membantu analisis customer value dan engagement.
+* Mengidentifikasi seller yang paling sering melewati batas waktu pengiriman.
+* Mengetahui seller yang berpotensi menyebabkan pengalaman pelanggan yang buruk.
+* Membantu tim operasional melakukan monitoring terhadap seller bermasalah.
+* Menjadi dasar evaluasi kepatuhan seller terhadap standar layanan perusahaan.
+* Dapat digunakan untuk program pembinaan atau penalti terhadap seller tertentu.
 
 ---
 
-## Q6 — Most Popular Aisles
+## Q6 — Top Seller dengan Performa Terbaik
 
 Visualisasi:
 
 ![alt text](assets/q6.png)
 
 ## Insight
-
-Menganalisis aisle/rak produk yang paling sering dikunjungi melalui pembelian.
+Visualisasi ini menunjukkan seller dengan review score tertinggi dan performa pengiriman yang baik.
 
 Insight:
-
-* Mengetahui area produk paling populer.
-* Membantu memahami preferensi konsumen.
-* Menentukan aisle dengan demand tertinggi.
-* Dapat digunakan untuk strategi penempatan produk dan promosi.
+* Mengidentifikasi seller dengan tingkat kepuasan pelanggan terbaik.
+* Mengetahui seller yang konsisten memberikan layanan berkualitas.
+* Dapat digunakan sebagai benchmark bagi seller lainnya.
+* Membantu perusahaan dalam program penghargaan atau promosi seller terbaik.
+* Menunjukkan hubungan antara kualitas layanan dan kepuasan pelanggan.
 
 ---
 
-## Q7 — Basket Size Distribution
+## Q7 — Monthly Delivery Trend
 
 Visualisasi:
 
 ![alt text](assets/q7.png)
 
 ## Insight
-
-Menganalisis distribusi jumlah item dalam setiap order.
+Visualisasi ini memperlihatkan tren performa pengiriman dari bulan ke bulan.
 
 Insight:
-
-* Mengetahui kebiasaan belanja user.
-* Mengidentifikasi apakah mayoritas user membeli sedikit atau banyak item.
-* Basket size besar dapat menunjukkan high-value customer.
-* Membantu strategi cross-selling dan bundling.
+* Mengetahui apakah tingkat keterlambatan membaik atau memburuk dari waktu ke waktu.
+* Mengidentifikasi periode dengan lonjakan keterlambatan pengiriman.
+* Membantu mendeteksi dampak musim tertentu terhadap performa logistik.
+* Menjadi dasar evaluasi strategi operasional jangka panjang.
+* Dapat digunakan untuk memprediksi kebutuhan kapasitas logistik di masa depan.
 
 ---
 
-## Q8 — Top Reordered Products
+## Q8 — Sentiment Distribution
 
 Visualisasi:
 
 ![alt text](assets/q8.png)
 
 ## Insight
-
-Menampilkan produk dengan tingkat reorder tertinggi.
+Visualisasi ini menampilkan distribusi sentimen pelanggan berdasarkan komentar review.
 
 Insight:
-
-* Mengetahui produk dengan loyalitas pelanggan paling tinggi.
-* Produk dengan reorder rate tinggi biasanya merupakan kebutuhan rutin.
-* Membantu strategi subscription atau recurring orders.
-* Dapat digunakan untuk rekomendasi produk favorit pelanggan.
+* Mengukur proporsi pelanggan yang memberikan pengalaman positif, netral, atau negatif.
+* Mengetahui persepsi pelanggan terhadap layanan pengiriman secara keseluruhan.
+* Membantu mengevaluasi kualitas layanan dari sudut pandang pelanggan.
+* Menjadi indikator non-finansial untuk mengukur customer experience.
+* Dapat digunakan untuk memantau perubahan sentimen pelanggan dari waktu ke waktu.
 
 ---
 
-## Q9 — KPI Summary Dashboard
+## Q9 — Sentiment vs Delivery Delay
 
 Visualisasi:
 
 ![alt text](assets/q9.png)
 
 ## Insight
-
-Memberikan ringkasan metrik utama dari keseluruhan dataset.
+Visualisasi ini menganalisis hubungan antara sentimen pelanggan dan tingkat keterlambatan pengiriman.
 
 Insight:
-
-* Total transaksi yang terjadi.
-* Jumlah user unik dan produk unik.
-* Banyaknya department aktif.
-* Total item yang terjual.
-* Tingkat reorder keseluruhan platform.
+* Mengetahui apakah keterlambatan pengiriman berpengaruh terhadap sentimen pelanggan.
+* Mengidentifikasi rata-rata keterlambatan pada review positif, netral, dan negatif.
+* Membuktikan dampak operasional logistik terhadap pengalaman pelanggan.
+* Membantu perusahaan memahami faktor utama yang memicu keluhan pelanggan.
+* Menjadi dasar pengambilan keputusan untuk meningkatkan kepuasan pelanggan melalui perbaikan proses pengiriman.
 
 ---
 
-## Q10 — Shopping Time Analysis
+## Q10 — Review Score Distribution
 
 Visualisasi:
 
 ![alt text](assets/q10.png)
 
 ## Insight
-
-Menganalisis jam belanja paling ramai berdasarkan order.
+Visualisasi ini menunjukkan distribusi rating yang diberikan pelanggan setelah pesanan diterima.
 
 Insight:
-
-* Mengetahui peak hour transaksi.
-* Membantu optimasi sistem saat traffic tinggi.
-* Dapat digunakan untuk strategi promo berbasis waktu.
-* Membantu penjadwalan operasional dan resource allocation.
+* Mengetahui pola kepuasan pelanggan berdasarkan skor review 1–5.
+* Mengidentifikasi apakah mayoritas pelanggan merasa puas terhadap layanan yang diberikan.
+* Membantu mendeteksi adanya ketidakpuasan pelanggan secara massal.
+* Menjadi indikator kualitas layanan secara langsung dari perspektif pelanggan.
+* Dapat digunakan untuk mengukur keberhasilan strategi peningkatan kualitas operasional dan pengiriman.
 
 ---
 
 # ✅ Hasil Pipeline
 
 Pipeline berhasil:
-
-- Mengambil data dari API
-- Menyimpan ke data lake
-- Memproses analytics menggunakan Spark
-- Memuat data ke ClickHouse
-- Divisualisasikan di Metabase atau Power BI
+- Membaca data Olist dari Data Lake (Parquet).
+- Melakukan transformasi dan analisis menggunakan PySpark.
+- Menghitung KPI operasional pengiriman dan SLA.
+- Melakukan sentiment analysis pada customer review.
+- Memuat hasil analisis ke ClickHouse.
+- Menyediakan dashboard interaktif melalui Metabase.
+- Menghasilkan insight terkait performa pengiriman, seller reliability, dan customer satisfaction.
